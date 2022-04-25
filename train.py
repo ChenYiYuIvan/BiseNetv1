@@ -1,5 +1,4 @@
 import argparse
-from torch.utils.data import Dataset
 from torch.utils.data import DataLoader
 import os
 from model.build_BiSeNet import BiSeNet
@@ -12,6 +11,7 @@ from utils import reverse_one_hot, compute_global_accuracy, fast_hist, \
     per_class_iu
 from loss import DiceLoss
 import torch.cuda.amp as amp
+from dataset.Cityscapes import Cityscapes
 
 
 def val(args, model, dataloader):
@@ -45,7 +45,7 @@ def val(args, model, dataloader):
             # predict = colour_code_segmentation(np.array(predict), label_info)
             # label = colour_code_segmentation(np.array(label), label_info)
             precision_record.append(precision)
-        
+
         precision = np.mean(precision_record)
         miou_list = per_class_iu(hist)
         miou = np.mean(miou_list)
@@ -74,22 +74,21 @@ def train(args, model, optimizer, dataloader_train, dataloader_val):
         tq.set_description('epoch %d, lr %f' % (epoch, lr))
         loss_record = []
         for i, (data, label) in enumerate(dataloader_train):
-            
             data = data.cuda()
             label = label.long().cuda()
             optimizer.zero_grad()
-            
+
             with amp.autocast():
                 output, output_sup1, output_sup2 = model(data)
                 loss1 = loss_func(output, label)
                 loss2 = loss_func(output_sup1, label)
                 loss3 = loss_func(output_sup2, label)
                 loss = loss1 + loss2 + loss3
-            
+
             scaler.scale(loss).backward()
             scaler.step(optimizer)
             scaler.update()
-            
+
             tq.update(args.batch_size)
             tq.set_postfix(loss='%.6f' % loss)
             step += 1
@@ -110,7 +109,7 @@ def train(args, model, optimizer, dataloader_train, dataloader_val):
             precision, miou = val(args, model, dataloader_val)
             if miou > max_miou:
                 max_miou = miou
-                import os 
+                import os
                 os.makedirs(args.save_model_path, exist_ok=True)
                 torch.save(model.module.state_dict(),
                            os.path.join(args.save_model_path, 'best_dice_loss.pth'))
@@ -144,13 +143,11 @@ def main(params):
 
     args = parser.parse_args(params)
 
-    # Create HERE datasets instance
-    # dataset_train =
-    # dataset_val =
+    dataset_train = Cityscapes(args.data, 'train', [args.crop_height, args.crop_width])
+    dataset_val = Cityscapes(args.data, 'val', [args.crop_height, args.crop_width])
 
-    # Define HERE your dataloaders:
-    # dataloader_train = ...
-    # dataloader_val = ...
+    dataloader_train = DataLoader(dataset_train, batch_size=args.batch_size, shuffle=True)
+    dataloader_val = DataLoader(dataset_val, batch_size=args.batch_size, shuffle=True)
 
     # build model
     os.environ['CUDA_VISIBLE_DEVICES'] = args.cuda
@@ -183,16 +180,17 @@ def main(params):
 
 if __name__ == '__main__':
     params = [
-        '--num_epochs', '1000',
+        '--num_epochs', '50',
         '--learning_rate', '2.5e-2',
-        '--data', './data/...',
+        '--data', '../Cityscapes',  # set ../Cityscapes or ../GTA5
         '--num_workers', '8',
         '--num_classes', '19',
         '--cuda', '0',
-        '--batch_size', '8',
+        '--batch_size', '4',
         '--save_model_path', './checkpoints_101_sgd',
         '--context_path', 'resnet101',  # set resnet18 or resnet101, only support resnet18 and resnet101
         '--optimizer', 'sgd',
-
+        '--crop_height', '512',
+        '--crop_width', '1024',
     ]
     main(params)
