@@ -1,7 +1,11 @@
 import os
+
+import torch
 from torch.utils.data import Dataset
 from PIL import Image
 from torchvision import transforms
+import json
+import numpy as np
 
 
 class Cityscapes(Dataset):
@@ -11,6 +15,7 @@ class Cityscapes(Dataset):
         self.mode = mode
         self.img_size = img_size
 
+        # store paths of images
         with open(os.path.join(self.path, f'{mode}.txt'), 'r') as f:
             image_names = f.readlines()
             self.image_path_list = [os.path.join(self.path, 'images', self.get_image_path(image_name)) for image_name in
@@ -18,9 +23,22 @@ class Cityscapes(Dataset):
             self.label_path_list = [os.path.join(self.path, 'labels', self.get_label_path(image_name)) for image_name in
                                     image_names]
 
+        # store mapping of labels
+        with open(os.path.join(self.path, 'info.json'), 'r') as f:
+            data = json.load(f)
+            mappings = data['label2train']
+            self.label_mapping = np.array(mappings)[:, 1]
+
         self.image_transform = transforms.Compose([
             transforms.Resize(self.img_size),
             transforms.PILToTensor(),
+        ])
+
+        self.label_transform = transforms.Compose([
+            transforms.Resize(self.img_size),
+            transforms.Lambda(lambda image: np.asarray(image)),
+            transforms.Lambda(lambda pixel: self.label_mapping[pixel]),
+            transforms.ToTensor(),
         ])
 
     def get_image_path(self, image_name):
@@ -36,5 +54,5 @@ class Cityscapes(Dataset):
         image_path = self.image_path_list[idx]
         label_path = self.label_path_list[idx]
         image = self.image_transform(Image.open(image_path)).float()
-        label = self.image_transform(Image.open(label_path))
+        label = self.label_transform(Image.open(label_path))[0]
         return image, label

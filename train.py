@@ -143,6 +143,7 @@ def main(params):
 
     args = parser.parse_args(params)
 
+    # load datasets and dataloaders
     dataset_train = Cityscapes(args.data, 'train', [args.crop_height, args.crop_width])
     dataset_val = Cityscapes(args.data, 'val', [args.crop_height, args.crop_width])
 
