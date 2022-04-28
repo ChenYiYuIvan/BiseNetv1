@@ -28,7 +28,7 @@ def val(args, model, dataloader):
 
             # get RGB predict image
             predict = model(data).squeeze()
-            predict = reverse_one_hot(predict)
+            predict = torch.argmax(predict, dim=1)
             predict = np.array(predict.cpu())
 
             # get RGB label image
@@ -148,7 +148,7 @@ def main(params):
     dataset_val = Cityscapes(args.data, 'val', [args.crop_height, args.crop_width])
 
     dataloader_train = DataLoader(dataset_train, batch_size=args.batch_size, shuffle=True)
-    dataloader_val = DataLoader(dataset_val, batch_size=args.batch_size, shuffle=True)
+    dataloader_val = DataLoader(dataset_val, batch_size=1, shuffle=False)
 
     # build model
     os.environ['CUDA_VISIBLE_DEVICES'] = args.cuda
@@ -181,7 +181,7 @@ def main(params):
 
 if __name__ == '__main__':
     params = [
-        '--num_epochs', '50',
+        '--num_epochs', '2',
         '--learning_rate', '2.5e-2',
         '--data', '../Cityscapes',  # set ../Cityscapes or ../GTA5
         '--num_workers', '8',
@@ -193,5 +193,7 @@ if __name__ == '__main__':
         '--optimizer', 'sgd',
         '--crop_height', '512',
         '--crop_width', '1024',
+        '--checkpoint_step', '1',
+        '--validation_step', '1',
     ]
     main(params)
