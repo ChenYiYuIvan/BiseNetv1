@@ -27,7 +27,7 @@ def val(args, model, dataloader):
             label = label.long().cuda()
 
             # get RGB predict image
-            predict = model(data).squeeze()
+            predict = model(data)
             predict = torch.argmax(predict, dim=1)
             predict = np.array(predict.cpu())
 
@@ -181,7 +181,7 @@ def main(params):
 
 if __name__ == '__main__':
     params = [
-        '--num_epochs', '2',
+        '--num_epochs', '50',
         '--learning_rate', '2.5e-2',
         '--data', '../Cityscapes',  # set ../Cityscapes or ../GTA5
         '--num_workers', '8',
@@ -193,7 +193,7 @@ if __name__ == '__main__':
         '--optimizer', 'sgd',
         '--crop_height', '512',
         '--crop_width', '1024',
-        '--checkpoint_step', '1',
+        '--checkpoint_step', '10',
         '--validation_step', '1',
     ]
     main(params)
