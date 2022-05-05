@@ -1,6 +1,8 @@
 import argparse
 from torch.utils.data import DataLoader
 import os
+
+import utils
 from model.build_BiSeNet import BiSeNet
 import torch
 from tensorboardX import SummaryWriter
@@ -12,6 +14,7 @@ from utils import reverse_one_hot, compute_global_accuracy, fast_hist, \
 from loss import DiceLoss
 import torch.cuda.amp as amp
 from dataset.Cityscapes import Cityscapes
+from datetime import datetime
 
 
 def val(args, model, dataloader):
@@ -102,8 +105,9 @@ def train(args, model, optimizer, dataloader_train, dataloader_val):
             import os
             if not os.path.isdir(args.save_model_path):
                 os.mkdir(args.save_model_path)
+            date = datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
             torch.save(model.module.state_dict(),
-                       os.path.join(args.save_model_path, 'latest_dice_loss.pth'))
+                       os.path.join(args.save_model_path, f'latest_dice_loss_no_norm{date}.pth'))
 
         if epoch % args.validation_step == 0 and epoch != 0:
             precision, miou = val(args, model, dataloader_val)
@@ -111,8 +115,9 @@ def train(args, model, optimizer, dataloader_train, dataloader_val):
                 max_miou = miou
                 import os
                 os.makedirs(args.save_model_path, exist_ok=True)
+                date = datetime.now().strftime('%Y_%d_%m_%H_%M_%S')
                 torch.save(model.module.state_dict(),
-                           os.path.join(args.save_model_path, 'best_dice_loss.pth'))
+                           os.path.join(args.save_model_path, f'best_dice_loss_no_norm{date}.pth'))
             writer.add_scalar('epoch/precision_val', precision, epoch)
             writer.add_scalar('epoch/miou val', miou, epoch)
 
@@ -194,6 +199,6 @@ if __name__ == '__main__':
         '--crop_height', '512',
         '--crop_width', '1024',
         '--checkpoint_step', '10',
-        '--validation_step', '1',
+        '--validation_step', '10',
     ]
     main(params)
