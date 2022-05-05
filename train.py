@@ -1,6 +1,8 @@
 import argparse
 from torch.utils.data import DataLoader
 import os
+
+import utils
 from model.build_BiSeNet import BiSeNet
 import torch
 from tensorboardX import SummaryWriter
@@ -100,19 +102,22 @@ def train(args, model, optimizer, dataloader_train, dataloader_val):
         writer.add_scalar('epoch/loss_epoch_train', float(loss_train_mean), epoch)
         print('loss for train : %f' % (loss_train_mean))
         if epoch % args.checkpoint_step == 0 and epoch != 0:
+            import os
             if not os.path.isdir(args.save_model_path):
                 os.mkdir(args.save_model_path)
+            date = datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
             torch.save(model.module.state_dict(),
-                       os.path.join(args.save_model_path, 'latest_dice_loss.pth'))
+                       os.path.join(args.save_model_path, f'latest_dice_loss_no_norm{date}.pth'))
 
         if epoch % args.validation_step == 0 and epoch != 0:
             precision, miou = val(args, model, dataloader_val)
             if miou > max_miou:
                 max_miou = miou
+                import os
                 os.makedirs(args.save_model_path, exist_ok=True)
-                time = datetime.now()
+                date = datetime.now().strftime('%Y_%d_%m_%H_%M_%S')
                 torch.save(model.module.state_dict(),
-                           os.path.join(args.save_model_path, f'best_dice_loss_{time}.pth'))
+                           os.path.join(args.save_model_path, f'best_dice_loss_no_norm{date}.pth'))
             writer.add_scalar('epoch/precision_val', precision, epoch)
             writer.add_scalar('epoch/miou val', miou, epoch)
 
@@ -194,6 +199,6 @@ if __name__ == '__main__':
         '--crop_height', '512',
         '--crop_width', '1024',
         '--checkpoint_step', '10',
-        '--validation_step', '1',
+        '--validation_step', '10',
     ]
     main(params)
