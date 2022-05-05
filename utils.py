@@ -1,6 +1,5 @@
 import torch.nn as nn
 import torch
-from torch.nn import functional as F
 from PIL import Image
 import numpy as np
 import pandas as pd
@@ -8,27 +7,50 @@ import random
 import numbers
 import torchvision
 from torchvision import transforms
+import matplotlib.patches as mpatches
 
 
 def denormalize_image(image_tensor, mean, std):
+    """
+    Return denormalized image
+    """
     mean = np.array(mean)
     std = np.array(std)
-    denormalize = transforms.Normalize((-mean / std).tolist(), (1 / std).tolist())
+    denormalize = transforms.Normalize((-mean / std), (1 / std))
     return denormalize(image_tensor)
 
 
 def format_image_print(image):
-    return (image.permute(1, 2, 0)).numpy().astype(np.uint8)
+    """
+    Return image in correct form for plt.imshow
+    """
+    return image.permute(1, 2, 0)
 
 
 def format_label_print(label, palette):
+    """
+    Apply palette to label and return it in correct form for plt.imshow
+    """
     lbl = label.numpy()
     mask = lbl == 255
-    lbl[mask] = 19
+    lbl[mask] = 19  # needed to apply correct palette to unlabeled pixels
     lbl = Image.fromarray(label.numpy().astype(np.uint8))
-    lbl.convert('P')  # converto a P (???)
-    lbl.putpalette(palette)  # applico la palette
+    lbl.convert('P')
+    lbl.putpalette(palette)  # apply la palette
     return lbl
+
+
+def get_legend_handles(label, palette):
+    """
+    Return handles to use for plt.legend
+    """
+    num = len(label)
+    a = (np.array(palette).reshape(num, 3)) / 255
+    b = np.ones((20, 1))
+    c = np.hstack((a, b)).tolist()
+    colors = [tuple(row) for row in c]
+    patches = [mpatches.Patch(color=colors[i], label=label[i]) for i in range(num)]
+    return patches
 
 
 def poly_lr_scheduler(optimizer, init_lr, iter, lr_decay_iter=1,
@@ -38,7 +60,7 @@ def poly_lr_scheduler(optimizer, init_lr, iter, lr_decay_iter=1,
         :param iter is a current iteration
         :param lr_decay_iter how frequently decay occurs, default is 1
         :param max_iter is number of maximum iterations
-        :param power is a polymomial power
+        :param power is a polynomial power
 
     """
     # if iter % lr_decay_iter or iter > max_iter:

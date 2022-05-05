@@ -5,16 +5,11 @@ import json
 import numpy as np
 
 
-# TODO questions to ask:
-#   working in range [0, 255] instead of [0,1] is a problem?
-#   correct mean and std values for normalization? mean = [0.485, 0.456, 0.406] and std = [0.229, 0.224, 0.225]
-#   batch normalization? already implemented
-#   package for visualization of training (for report) (eg. neptune, weights&biases, tensorboard...)? last 2
-#   bisenet for segmentation network? yes
-#   is discriminator network architecture pretrained? no
-#   sgd or adam optimizer for training? sgd for seg, adam for discr
-#   single or multi-level adversarial learning? if multi, how many? single
-#   values of parameters in loss functions? nel paper
+# TODO:
+#   wandb or tensorboard for visualization
+#   sgd for segmentation, adam for discriminator
+#   single level adversarial learning
+#   values of parameters in loss functions in the paper
 
 class GeneralDataset(Dataset):
     def __init__(self, path, img_size):
@@ -38,8 +33,7 @@ class GeneralDataset(Dataset):
 
         self.image_transform = transforms.Compose([
             transforms.Resize(self.img_size),
-            transforms.PILToTensor(),
-            transforms.Lambda(lambda tensor: tensor.float()),
+            transforms.ToTensor(),
             transforms.Normalize(self.mean, self.std),
         ])
 
