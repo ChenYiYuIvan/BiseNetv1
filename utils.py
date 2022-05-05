@@ -11,9 +11,9 @@ from torchvision import transforms
 
 
 def denormalize_image(image_tensor, mean, std):
-    neg_mean_over_std = [-a / b for a, b in zip(mean, std)]
-    one_over_std = [1 / a for a in std]
-    denormalize = transforms.Normalize(neg_mean_over_std, one_over_std)
+    mean = np.array(mean)
+    std = np.array(std)
+    denormalize = transforms.Normalize((-mean / std).tolist(), (1 / std).tolist())
     return denormalize(image_tensor)
 
 
@@ -22,6 +22,9 @@ def format_image_print(image):
 
 
 def format_label_print(label, palette):
+    lbl = label.numpy()
+    mask = lbl == 255
+    lbl[mask] = 19
     lbl = Image.fromarray(label.numpy().astype(np.uint8))
     lbl.convert('P')  # converto a P (???)
     lbl.putpalette(palette)  # applico la palette

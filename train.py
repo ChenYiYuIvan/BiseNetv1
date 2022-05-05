@@ -12,6 +12,7 @@ from utils import reverse_one_hot, compute_global_accuracy, fast_hist, \
 from loss import DiceLoss
 import torch.cuda.amp as amp
 from dataset.Cityscapes import Cityscapes
+from datetime import datetime
 
 
 def val(args, model, dataloader):
@@ -99,7 +100,6 @@ def train(args, model, optimizer, dataloader_train, dataloader_val):
         writer.add_scalar('epoch/loss_epoch_train', float(loss_train_mean), epoch)
         print('loss for train : %f' % (loss_train_mean))
         if epoch % args.checkpoint_step == 0 and epoch != 0:
-            import os
             if not os.path.isdir(args.save_model_path):
                 os.mkdir(args.save_model_path)
             torch.save(model.module.state_dict(),
@@ -109,10 +109,10 @@ def train(args, model, optimizer, dataloader_train, dataloader_val):
             precision, miou = val(args, model, dataloader_val)
             if miou > max_miou:
                 max_miou = miou
-                import os
                 os.makedirs(args.save_model_path, exist_ok=True)
+                time = datetime.now()
                 torch.save(model.module.state_dict(),
-                           os.path.join(args.save_model_path, 'best_dice_loss.pth'))
+                           os.path.join(args.save_model_path, f'best_dice_loss_{time}.pth'))
             writer.add_scalar('epoch/precision_val', precision, epoch)
             writer.add_scalar('epoch/miou val', miou, epoch)
 
