@@ -3,9 +3,8 @@ from dataset.GeneralDataset import GeneralDataset
 
 
 class Cityscapes(GeneralDataset):
-    def __init__(self, path, mode, img_size):
-        super().__init__(path, img_size)
-        self.mode = mode
+    def __init__(self, path, mode, img_size, data_augmentation):
+        super().__init__(path, mode, img_size, data_augmentation)
 
         # store paths of images
         with open(os.path.join(self.path, f'{mode}.txt'), 'r') as f:

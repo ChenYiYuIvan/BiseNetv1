@@ -1,0 +1,5 @@
+__pycache__/
+runs/
+checkpoints_101_sgd/
+wandb/
+artifacts
