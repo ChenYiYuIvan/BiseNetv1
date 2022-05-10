@@ -27,7 +27,7 @@ def main(params):
     parser.add_argument('--save_model_path', type=str, default=None, help='path to save model')
     parser.add_argument('--optimizer', type=str, default='rmsprop', help='optimizer, support rmsprop, sgd, adam')
     parser.add_argument('--loss', type=str, default='crossentropy', help='loss function, dice or crossentropy')
-    parser.add_argument('--data_augmentation', type=bool, default='True',
+    parser.add_argument('--data_augmentation', dest='data_augmentation', default=False, action='store_true',
                         help='True to include data augmentation during training, False otherwise')
     parser.add_argument('--model_name', type=str, default=None, help='name of the model')
 
@@ -35,7 +35,7 @@ def main(params):
 
     # wandb pipeline
     wandb.login()
-    with wandb.init(project="segmentation-step2", entity="mldlproj1gr2", config=vars(args)) as run:
+    with wandb.init(project="step2", entity="mldlproj1gr2", config=vars(args)) as run:
         config = wandb.config
 
         # make model, dataloader and optimizer
@@ -62,7 +62,7 @@ if __name__ == '__main__':
         '--crop_width', '1024',
         '--checkpoint_step', '1',
         '--validation_step', '1',
-        '--data_augmentation', 'True',
+        # '--data_augmentation',
         '--model_name', 'bisenet_trained',
     ]
     main(params)
