@@ -1,5 +1,6 @@
 import argparse
-from pipeline_step2 import make, train, val
+from pipeline_step2 import make, train
+from val import val
 import wandb
 
 
@@ -48,7 +49,7 @@ def main(params):
 
 if __name__ == '__main__':
     params = [
-        '--num_epochs', '50',
+        '--num_epochs', '100',
         '--learning_rate', '2.5e-2',
         '--data', '../Cityscapes',  # set ../Cityscapes or ../GTA5
         '--num_workers', '4',
@@ -60,9 +61,9 @@ if __name__ == '__main__':
         '--optimizer', 'sgd',
         '--crop_height', '512',
         '--crop_width', '1024',
-        '--checkpoint_step', '1',
-        '--validation_step', '1',
-        # '--data_augmentation',
+        '--checkpoint_step', '5',
+        '--validation_step', '5',
+        '--data_augmentation',
         '--model_name', 'bisenet_trained',
     ]
     main(params)

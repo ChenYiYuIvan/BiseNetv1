@@ -4,14 +4,13 @@ from torch.utils.data import DataLoader
 import os
 from model.build_BiSeNet import BiSeNet
 import torch
-from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 import numpy as np
 from utils import poly_lr_scheduler
-from utils import reverse_one_hot, compute_global_accuracy, fast_hist, per_class_iu
 from loss import DiceLoss
 import torch.cuda.amp as amp
 from dataset.Cityscapes import Cityscapes
+from val import val
 
 
 def make(config):
@@ -69,7 +68,6 @@ def make(config):
 def train(config, model, criterion, optimizer, dataloader_train, dataloader_val, wandb_inst):
     wandb_inst.watch(model, criterion, log_freq=config.batch_size)
     artifact = wandb.Artifact(name='trained_bisenet', type='model', metadata=dict(config))
-    # writer = SummaryWriter(comment=''.format(config.optimizer, config.context_path))
 
     # creating table to store metrics for wandb
     metrics_rows = []
@@ -116,14 +114,12 @@ def train(config, model, criterion, optimizer, dataloader_train, dataloader_val,
             step += 1
 
             wandb_inst.log({"epoch": epoch, "loss": loss}, step=step)
-            # writer.add_scalar('loss_step', loss, step)
 
             loss_record.append(loss.item())
         tq.close()
         loss_train_mean = np.mean(loss_record)
 
         wandb_inst.log({"loss_epoch_train": loss_train_mean}, step=step)
-        # writer.add_scalar('epoch/loss_epoch_train', float(loss_train_mean), epoch)
 
         print('loss for train : %f' % loss_train_mean)
         if epoch % config.checkpoint_step == config.checkpoint_step - 1:
@@ -146,52 +142,8 @@ def train(config, model, criterion, optimizer, dataloader_train, dataloader_val,
             metrics_rows.append([epoch, precision, miou, *miou_list])
             wandb_inst.log({"accuracy": precision, "mIoU": miou}, step=step)
             wandb_inst.log(dict(zip(labels, miou_list)), step=step)
-            # writer.add_scalar('epoch/precision_val', precision, epoch)
-            # writer.add_scalar('epoch/miou val', miou, epoch)
 
     metrics_table = wandb.Table(columns=columns, data=metrics_rows)
 
     wandb_inst.log({'metrics_table': metrics_table})
     wandb_inst.log_artifact(artifact)
-
-
-def val(config, model, dataloader):
-    print('start val!')
-    # label_info = get_label_info(csv_path)
-    with torch.no_grad():
-        model.eval()
-        precision_record = []
-        hist = np.zeros((config.num_classes, config.num_classes))
-        for i, (data, label) in enumerate(dataloader):
-            label = label.type(torch.LongTensor)
-            data = data.cuda()
-            label = label.long().cuda()
-
-            # get RGB predict image
-            predict = model(data)
-            predict = torch.argmax(predict, dim=1)
-            predict = np.array(predict.cpu())
-
-            # get RGB label image
-            label = label.squeeze()
-            if config.loss == 'dice':
-                label = reverse_one_hot(label)
-            label = np.array(label.cpu())
-
-            # compute per pixel accuracy
-            precision = compute_global_accuracy(predict, label)
-            hist += fast_hist(label.flatten(), predict.flatten(), config.num_classes)
-
-            # there is no need to transform the one-hot array to visual RGB array
-            # predict = colour_code_segmentation(np.array(predict), label_info)
-            # label = colour_code_segmentation(np.array(label), label_info)
-            precision_record.append(precision)
-
-        precision = np.mean(precision_record)
-        miou_list = per_class_iu(hist)
-        miou = np.mean(miou_list)
-        print('precision per pixel for test: %.3f' % precision)
-        print('mIoU for validation: %.3f' % miou)
-        print(f'mIoU per class: {miou_list}')
-
-    return precision, miou, miou_list
