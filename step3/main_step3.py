@@ -23,7 +23,7 @@ def main(params):
     parser.add_argument('--learning_rate_discr', type=float, default=0.01, help='learning rate for training discrim')
     parser.add_argument('--data_source', type=str, default='', help='path of source data')
     parser.add_argument('--data_target', type=str, default='', help='path of target data')
-    # parser.add_argument('--lambda_seg', type=float, default=0.1, help='lambda for segmentation loss')
+    parser.add_argument('--lambda_seg', type=float, default=1, help='lambda for segmentation loss')
     parser.add_argument('--lambda_adv', type=float, default=0.001, help='lambda for adversarial loss')
     parser.add_argument('--num_workers', type=int, default=4, help='num of workers')
     parser.add_argument('--num_classes', type=int, default=32, help='num of object classes (with void)')
@@ -72,6 +72,6 @@ if __name__ == '__main__':
         '--checkpoint_step', '5',
         '--validation_step', '5',
         '--data_augmentation',
-        '--model_name', 'bisenet_trained',
+        '--model_name', 'bisenet_adversarial',
     ]
     main(params)

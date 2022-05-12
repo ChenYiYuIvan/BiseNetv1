@@ -115,8 +115,7 @@ def train(config, model_gen, model_discr, loss_gen, loss_discr, optim_gen, optim
             optim_gen.zero_grad()
             optim_discr.zero_grad()
 
-            #################
-            # train generator
+            # TRAIN GENERATOR
 
             # don't accumulate grads in D
             for param in model_discr.parameters():
@@ -129,7 +128,7 @@ def train(config, model_gen, model_discr, loss_gen, loss_discr, optim_gen, optim
                 loss2 = loss_gen(output_sup1, label_src)
                 loss3 = loss_gen(output_sup2, label_src)
                 loss_seg = loss1 + loss2 + loss3
-                # loss_seg = config.lambda_seg * loss_seg
+                loss_seg = config.lambda_seg * loss_seg
 
             scaler.scale(loss_seg).backward()
 
@@ -151,8 +150,7 @@ def train(config, model_gen, model_discr, loss_gen, loss_discr, optim_gen, optim
             loss_adv_record.append(loss_adv.item())
             loss_gen_record.append(loss_gen_val.item())
 
-            #####################
-            # train discriminator
+            # TRAIN DISCRIMINATOR
 
             # bring back requires_grad
             for param in model_discr.parameters():

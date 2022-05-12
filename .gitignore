@@ -1,5 +1,6 @@
 __pycache__/
 runs/
 checkpoints_101_sgd/
+checkpoints_adversarial/
 wandb/
 artifacts
