@@ -21,16 +21,17 @@ model = BiSeNet(19, "resnet101")
 model.load_state_dict(torch.load(model_path))
 model.eval()
 
-# show results
 with torch.no_grad():
     fig, axarr = plt.subplots(batch_size, 3, figsize=(10, 10))
 
+    # calculate prediction for a batch
     img_batch, lbl_batch = next(iter(dataloader_train))
     pred_batch = model(img_batch)
     pred_lbl_batch = torch.argmax(pred_batch, dim=1)
 
     patches = get_legend_handles(dataset_train.labels, dataset_train.palette)
 
+    # show results
     for idx in range(batch_size):
         img = img_batch[idx]
         img_denorm = denormalize_image(img, dataset_train.mean, dataset_train.std)

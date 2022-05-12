@@ -45,14 +45,14 @@ def make(config):
     os.environ['CUDA_VISIBLE_DEVICES'] = config.cuda
 
     model_gen = BiSeNet(config.num_classes, config.context_path)
-    if torch.cuda.is_available() and config.use_gpu:
-        model_gen = torch.nn.DataParallel(model_gen).cuda()
 
     if config.depthwise_separable:
         model_discr = DepthwiseSeparableDiscriminator(in_ch=config.num_classes)
     else:
         model_discr = Discriminator(in_channels=config.num_classes)
+
     if torch.cuda.is_available() and config.use_gpu:
+        model_gen = torch.nn.DataParallel(model_gen).cuda()
         model_discr = torch.nn.DataParallel(model_discr).cuda()
 
     # build optimizer
@@ -107,7 +107,7 @@ def train(config, model_gen, model_discr, loss_gen, loss_discr, optim_gen, optim
 
         loss_seg_record = []
         loss_adv_record = []
-        loss_gen_record = []
+        loss_gen_record = []  # loss_gen = lambda_seg * loss_seg + lambda_adv * loss_adv
         loss_discr_record = []
         for (data_src, label_src), (data_tgt, _) in zip(dataloader_source, dataloader_target):
             # move data to gpu
