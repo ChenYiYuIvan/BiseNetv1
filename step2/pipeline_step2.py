@@ -65,8 +65,8 @@ def make(config):
     return model, criterion, optimizer, dataloader_train, dataloader_val
 
 
-def train(config, model, criterion, optimizer, dataloader_train, dataloader_val, wandb_inst):
-    wandb_inst.watch(model, criterion, log_freq=config.batch_size)
+def train(config, model, loss_func, optimizer, dataloader_train, dataloader_val, wandb_inst):
+    wandb_inst.watch(model, loss_func, log_freq=config.batch_size)
     artifact = wandb.Artifact(name='trained_bisenet', type='model', metadata=dict(config))
 
     # creating table to store metrics for wandb
@@ -83,7 +83,6 @@ def train(config, model, criterion, optimizer, dataloader_train, dataloader_val,
         os.mkdir(config.save_model_path)
 
     scaler = amp.GradScaler()
-    loss_func = criterion
 
     max_miou = 0
     step = 0
@@ -126,7 +125,7 @@ def train(config, model, criterion, optimizer, dataloader_train, dataloader_val,
 
             model_path_name = os.path.join(config.save_model_path, f'{config.model_name}.pth')
             torch.save(model.module.state_dict(), model_path_name)
-            artifact.add_file(model_path_name, name=f'{config.model_name}_{epoch}')
+            artifact.add_file(model_path_name, name=f'{config.model_name}_{epoch}.pth')
 
         if epoch % config.validation_step == config.validation_step - 1:
             precision, miou, miou_list = val(config, model, dataloader_val)
@@ -135,7 +134,7 @@ def train(config, model, criterion, optimizer, dataloader_train, dataloader_val,
 
                 model_path_name = os.path.join(config.save_model_path, f'best_{config.model_name}.pth')
                 torch.save(model.module.state_dict(), model_path_name)
-                artifact.add_file(model_path_name, name=f'best_{config.model_name}_{epoch}')
+                artifact.add_file(model_path_name, name=f'best_{config.model_name}_{epoch}.pth')
 
                 wandb_inst.summary['max_mIoU'] = max_miou
 
