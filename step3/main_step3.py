@@ -34,7 +34,9 @@ def main(params):
     # parser.add_argument('--optimizer', type=str, default='rmsprop', help='optimizer, support rmsprop, sgd, adam')
     parser.add_argument('--loss', type=str, default='crossentropy', help='loss function, dice or crossentropy')
     parser.add_argument('--data_augmentation', dest='data_augmentation', default=False, action='store_true',
-                        help='True to include data augmentation during training, False otherwise')
+                        help='Include to use data augmentation during training')
+    parser.add_argument('--depthwise_separable', dest='depthwise_separable', default=False, action='store_true',
+                        help='Include to use depthwise_separable convolution in discriminator')
     parser.add_argument('--model_name', type=str, default=None, help='name of the model')
 
     args = parser.parse_args(params)
@@ -72,6 +74,7 @@ if __name__ == '__main__':
         '--checkpoint_step', '5',
         '--validation_step', '5',
         '--data_augmentation',
+        # '--depthwise_separable',
         '--model_name', 'bisenet_adversarial',
     ]
     main(params)

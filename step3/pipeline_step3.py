@@ -10,7 +10,7 @@ import numpy as np
 from dataset.Cityscapes import Cityscapes
 from dataset.GTA5 import GTA5
 from model.build_BiSeNet import BiSeNet
-from step3.utils_discriminator import Discriminator
+from model.build_discriminator import Discriminator, DepthwiseSeparableDiscriminator
 from utils import poly_lr_scheduler
 from val import val
 
@@ -48,7 +48,10 @@ def make(config):
     if torch.cuda.is_available() and config.use_gpu:
         model_gen = torch.nn.DataParallel(model_gen).cuda()
 
-    model_discr = Discriminator(in_channels=config.num_classes)
+    if config.depthwise_separable:
+        model_discr = DepthwiseSeparableDiscriminator(in_ch=config.num_classes)
+    else:
+        model_discr = Discriminator(in_channels=config.num_classes)
     if torch.cuda.is_available() and config.use_gpu:
         model_discr = torch.nn.DataParallel(model_discr).cuda()
 
