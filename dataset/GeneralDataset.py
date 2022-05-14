@@ -9,11 +9,6 @@ from torchvision.transforms.functional import InterpolationMode
 from utils import RandomCrop
 
 
-# TODO:
-#   sgd for segmentation, adam for discriminator
-#   single level adversarial learning
-#   values of parameters in loss functions in the paper
-
 class GeneralDataset(Dataset):
     def __init__(self, path, mode, img_size, data_augmentation):
         super().__init__()
@@ -50,12 +45,15 @@ class GeneralDataset(Dataset):
         image = Image.open(image_path)
         label = Image.open(label_path)
 
-        if not self.data_augmentation or self.mode == 'val':  # need to resize when there is no crop into correct size
+        # data augmentation only during training
+        augment = self.data_augmentation and self.mode == 'train'
+
+        if not augment:  # need to resize when there is no crop into correct size
             resize = transforms.Resize(self.img_size)
             image = resize(image)
             label = resize(label)
 
-        if self.data_augmentation and self.mode == 'train':  # apply random scale and random crop
+        if augment:  # apply random scale and random crop
             seed = random.random()
 
             image = self.random_scale(image, interpolation=InterpolationMode.BILINEAR, seed=seed)
@@ -70,7 +68,7 @@ class GeneralDataset(Dataset):
         label = self.label_mapping[label]
         label = torch.from_numpy(label)
 
-        if self.data_augmentation and self.mode == 'train':  # apply random horizontal flip
+        if augment:  # apply random horizontal flip
             flip_bool = random.random() < 0.5
 
             if flip_bool:

@@ -124,8 +124,8 @@ def train(config, model_gen, model_discr, loss_gen, loss_discr, optim_gen, optim
             for param in model_discr.parameters():
                 param.requires_grad = False
 
-            # train with source
             with amp.autocast():
+                # train with source
                 out_seg_src, output_sup1, output_sup2 = model_gen(data_src)
                 loss1 = loss_gen(out_seg_src, label_src)
                 loss2 = loss_gen(output_sup1, label_src)
@@ -133,19 +133,19 @@ def train(config, model_gen, model_discr, loss_gen, loss_discr, optim_gen, optim
                 loss_seg = loss1 + loss2 + loss3
                 loss_seg = config.lambda_seg * loss_seg
 
-            scaler.scale(loss_seg).backward()
-
-            # train with target
-            with amp.autocast():
+                # train with target
                 out_seg_tgt, _, _ = model_gen(data_tgt)
                 out_discr = model_discr(softmax(out_seg_tgt))
                 loss_adv = loss_discr(out_discr, torch.full(out_discr.size(), src_label, dtype=torch.float32,
                                                             device=torch.device('cuda')))
                 loss_adv = config.lambda_adv * loss_adv
 
+            # backward pass
+            scaler.scale(loss_seg).backward()
             scaler.scale(loss_adv).backward()
             scaler.step(optim_gen)
 
+            # store values
             loss_gen_val = loss_seg + loss_adv
             wandb_inst.log({"loss_seg": loss_seg, "loss_adv": loss_adv}, step=step)
             wandb_inst.log({"epoch": epoch, "loss_gen_val": loss_gen_val}, step=step)
@@ -159,25 +159,25 @@ def train(config, model_gen, model_discr, loss_gen, loss_discr, optim_gen, optim
             for param in model_discr.parameters():
                 param.requires_grad = True
 
-            # train with source
             with amp.autocast():
+                # train with source
                 out_seg_src = out_seg_src.detach()
                 out_discr_src = model_discr(softmax(out_seg_src))
                 loss_d_src = loss_discr(out_discr_src, torch.full(out_discr.size(), src_label, dtype=torch.float32,
                                                                   device=torch.device('cuda'))) / 2
 
-            scaler.scale(loss_d_src).backward()
-
-            # train with target
-            with amp.autocast():
+                # train with target
                 out_seg_tgt = out_seg_tgt.detach()
                 out_discr_tgt = model_discr(softmax(out_seg_tgt))
                 loss_d_tgt = loss_discr(out_discr_tgt, torch.full(out_discr.size(), tgt_label, dtype=torch.float32,
                                                                   device=torch.device('cuda'))) / 2
 
+            # backward pass
+            scaler.scale(loss_d_src).backward()
             scaler.scale(loss_d_tgt).backward()
             scaler.step(optim_discr)
 
+            # store values
             loss_discr_val = loss_d_src.item() + loss_d_tgt.item()
             wandb_inst.log({"loss_discr_val": loss_discr_val}, step=step)
             loss_discr_record.append(loss_discr_val)
@@ -189,9 +189,10 @@ def train(config, model_gen, model_discr, loss_gen, loss_discr, optim_gen, optim
             scaler.update()
 
         tq.close()
+
+        # store values
         loss_gen_train_mean = np.mean(loss_gen_record)
         loss_discr_train_mean = np.mean(loss_discr_record)
-
         wandb_inst.log({"loss_gen_train": loss_gen_train_mean, "loss_discr_train": loss_discr_train_mean}, step=step)
 
         print('loss for generator train : %f' % loss_gen_train_mean)

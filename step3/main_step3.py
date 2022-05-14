@@ -12,8 +12,8 @@ def main(params):
     # parser.add_argument('--epoch_start_i', type=int, default=0, help='Start counting epochs from this number')
     parser.add_argument('--checkpoint_step', type=int, default=10, help='How often to save checkpoints (epochs)')
     parser.add_argument('--validation_step', type=int, default=10, help='How often to perform validation (epochs)')
-    parser.add_argument('--dataset_source', type=str, default="Cityscapes", help='Source dataset you are using.')
-    parser.add_argument('--dataset_target', type=str, default="GTA5", help='Target dataset you are using.')
+    parser.add_argument('--dataset_source', type=str, default="GTA5", help='Source dataset you are using.')
+    parser.add_argument('--dataset_target', type=str, default="Cityscapes", help='Target dataset you are using.')
     parser.add_argument('--crop_height', type=int, default=512, help='Height of cropped/resized input image to network')
     parser.add_argument('--crop_width', type=int, default=1024, help='Width of cropped/resized input image to network')
     parser.add_argument('--batch_size', type=int, default=2, help='Number of images in each batch')
@@ -43,7 +43,7 @@ def main(params):
 
     # wandb pipeline
     wandb.login()
-    with wandb.init(project="step3", entity="mldlproj1gr2", config=vars(args)) as run:
+    with wandb.init(project="step2", entity="mldlproj1gr2", config=vars(args)) as run:
         config = wandb.config
 
         # make model, dataloader and optimizer

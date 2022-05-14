@@ -11,7 +11,10 @@ run = wandb.init(project="testing", entity="mldlproj1gr2")
 artifact = run.use_artifact('mldlproj1gr2/step2/trained_bisenet:v1', type='model')
 model_path = artifact.get_path('bisenet_trained_99').download()
 
-# define dataset and dataloader
+# or use trained model from local files
+# model_path = 'checkpoints_adversarial/best_bisenet_adversarial_noaug.pth'
+
+# define validation dataset
 batch_size = 4
 dataset_train = Cityscapes('../Cityscapes', 'val', [512, 1024], True)
 dataloader_train = DataLoader(dataset_train, batch_size=batch_size, shuffle=False)
