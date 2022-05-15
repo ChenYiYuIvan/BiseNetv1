@@ -107,7 +107,7 @@ def train(config, model_gen, model_discr, loss_gen, loss_discr, optim_gen, optim
 
         loss_seg_record = []
         loss_adv_record = []
-        loss_gen_record = []  # loss_gen = lambda_seg * loss_seg + lambda_adv * loss_adv
+        loss_gen_record = []  # loss_gen = lambda_seg * loss_seg_step + lambda_adv * loss_adv_step
         loss_discr_record = []
         for (data_src, label_src), (data_tgt, _) in zip(dataloader_source, dataloader_target):
             # move data to gpu
@@ -132,28 +132,28 @@ def train(config, model_gen, model_discr, loss_gen, loss_discr, optim_gen, optim
                 loss1 = loss_gen(out_seg_src, label_src)
                 loss2 = loss_gen(output_sup1, label_src)
                 loss3 = loss_gen(output_sup2, label_src)
-                loss_seg = loss1 + loss2 + loss3
-                loss_seg = config.lambda_seg * loss_seg
+                loss_seg_step = loss1 + loss2 + loss3
+                loss_seg_step = config.lambda_seg * loss_seg_step
 
                 # train with target
                 out_seg_tgt, _, _ = model_gen(data_tgt)
                 out_discr = model_discr(softmax(out_seg_tgt))
-                loss_adv = loss_discr(out_discr, torch.full(out_discr.size(), src_label, dtype=torch.float32,
-                                                            device=torch.device('cuda')))
-                loss_adv = config.lambda_adv * loss_adv
+                loss_adv_step = loss_discr(out_discr, torch.full(out_discr.size(), src_label, dtype=torch.float32,
+                                                                 device=torch.device('cuda')))
+                loss_adv_step = config.lambda_adv * loss_adv_step
 
             # backward pass
-            scaler.scale(loss_seg).backward()
-            scaler.scale(loss_adv).backward()
+            scaler.scale(loss_seg_step).backward()
+            scaler.scale(loss_adv_step).backward()
             scaler.step(optim_gen)
 
             # store values
-            loss_gen_val = loss_seg + loss_adv
-            wandb_inst.log({"loss_seg": loss_seg, "loss_adv": loss_adv}, step=step)
-            wandb_inst.log({"epoch": epoch, "loss_gen_val": loss_gen_val}, step=step)
-            loss_seg_record.append(loss_seg.item())
-            loss_adv_record.append(loss_adv.item())
-            loss_gen_record.append(loss_gen_val.item())
+            loss_gen_step = loss_seg_step + loss_adv_step
+            wandb_inst.log({"loss_seg_step": loss_seg_step, "loss_adv_step": loss_adv_step,
+                            "loss_gen_step": loss_gen_step, "epoch": epoch}, step=step)
+            loss_seg_record.append(loss_seg_step.item())
+            loss_adv_record.append(loss_adv_step.item())
+            loss_gen_record.append(loss_gen_step.item())
 
             # TRAIN DISCRIMINATOR
 
@@ -180,24 +180,27 @@ def train(config, model_gen, model_discr, loss_gen, loss_discr, optim_gen, optim
             scaler.step(optim_discr)
 
             # store values
-            loss_discr_val = loss_d_src.item() + loss_d_tgt.item()
-            wandb_inst.log({"loss_discr_val": loss_discr_val}, step=step)
-            loss_discr_record.append(loss_discr_val)
+            loss_discr_step = loss_d_src.item() + loss_d_tgt.item()
+            wandb_inst.log({"loss_discr_step": loss_discr_step}, step=step)
+            loss_discr_record.append(loss_discr_step)
 
             tq.update(config.batch_size)
-            tq.set_postfix(loss_gen_val='%.6f' % loss_gen_val, loss_discr_val='%.6f' % loss_discr_val)
+            tq.set_postfix(loss_gen_step='%.6f' % loss_gen_step, loss_discr_step='%.6f' % loss_discr_step)
 
             scaler.update()
 
         tq.close()
 
         # store values
-        loss_gen_train_mean = np.mean(loss_gen_record)
-        loss_discr_train_mean = np.mean(loss_discr_record)
-        wandb_inst.log({"loss_gen_train": loss_gen_train_mean, "loss_discr_train": loss_discr_train_mean}, step=step)
+        loss_seg_epoch = np.mean(loss_seg_record)
+        loss_adv_epoch = np.mean(loss_adv_record)
+        loss_gen_epoch = np.mean(loss_gen_record)
+        loss_discr_epoch = np.mean(loss_discr_record)
+        wandb_inst.log({"loss_seg_epoch": loss_seg_epoch, "loss_adv_epoch": loss_adv_epoch,
+                        "loss_gen_epoch": loss_gen_epoch, "loss_discr_epoch": loss_discr_epoch}, step=step)
 
-        print('loss for generator train : %f' % loss_gen_train_mean)
-        print('loss for discriminator train : %f' % loss_discr_train_mean)
+        print('loss for generator train : %f' % loss_gen_epoch)
+        print('loss for discriminator train : %f' % loss_discr_epoch)
 
         if epoch % config.checkpoint_step == config.checkpoint_step - 1:
             model_path_name = os.path.join(config.save_model_path, f'{config.model_name}.pth')
