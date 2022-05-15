@@ -8,8 +8,8 @@ import wandb
 
 # download file from wandb
 run = wandb.init(project="testing", entity="mldlproj1gr2")
-artifact = run.use_artifact('mldlproj1gr2/step2/trained_bisenet:v1', type='model')
-model_path = artifact.get_path('bisenet_trained_99').download()
+artifact = run.use_artifact('mldlproj1gr2/step2/trained_bisenet_discr:v0', type='model')
+model_path = artifact.get_path('bisenet_adversarial_99.pth').download()
 
 # or use trained model from local files
 # model_path = 'checkpoints_adversarial/best_bisenet_adversarial_noaug.pth'

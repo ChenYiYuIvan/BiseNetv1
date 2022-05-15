@@ -73,7 +73,7 @@ if __name__ == '__main__':
         '--crop_width', '1024',
         '--checkpoint_step', '5',
         '--validation_step', '5',
-        '--data_augmentation',
+        # '--data_augmentation',
         # '--depthwise_separable',
         '--model_name', 'bisenet_adversarial',
     ]

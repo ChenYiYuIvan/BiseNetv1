@@ -124,6 +124,8 @@ def train(config, model_gen, model_discr, loss_gen, loss_discr, optim_gen, optim
             for param in model_discr.parameters():
                 param.requires_grad = False
 
+            step += 1
+
             with amp.autocast():
                 # train with source
                 out_seg_src, output_sup1, output_sup2 = model_gen(data_src)
@@ -184,7 +186,6 @@ def train(config, model_gen, model_discr, loss_gen, loss_discr, optim_gen, optim
 
             tq.update(config.batch_size)
             tq.set_postfix(loss_gen_val='%.6f' % loss_gen_val, loss_discr_val='%.6f' % loss_discr_val)
-            step += 1
 
             scaler.update()
 
