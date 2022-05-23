@@ -4,3 +4,8 @@ checkpoints_101_sgd/
 checkpoints_adversarial/
 wandb/
 artifacts
+.idea
+**/desktop.ini
+.vscode
+step3/step3_*
+test_vast.ipynb

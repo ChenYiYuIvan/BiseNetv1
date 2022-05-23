@@ -7,17 +7,19 @@ import matplotlib.pyplot as plt
 import wandb
 
 # download file from wandb
-run = wandb.init(project="testing", entity="mldlproj1gr2")
-artifact = run.use_artifact('mldlproj1gr2/step2/trained_bisenet_discr:v0', type='model')
-model_path = artifact.get_path('bisenet_adversarial_99.pth').download()
+#run = wandb.init(project="testing", entity="mldlproj1gr2")
+#artifact = run.use_artifact('mldlproj1gr2/step2/trained_bisenet_discr:v3', type='model')
+#model_path = artifact.get_path('bisenet_adversarial_99.pth').download()
 
 # or use trained model from local files
 # model_path = 'checkpoints_adversarial/best_bisenet_adversarial_noaug.pth'
+model_path = 'artifacts/trained_bisenet_discr-v3/bisenet_adversarial_99.pth'
 
 # define validation dataset
 batch_size = 4
-dataset_train = Cityscapes('../Cityscapes', 'val', [512, 1024], True)
-dataloader_train = DataLoader(dataset_train, batch_size=batch_size, shuffle=False)
+dataset_train = Cityscapes('../Cityscapes', 'val', [512, 1024], False)
+dataloader_train = DataLoader(
+    dataset_train, batch_size=batch_size, shuffle=False)
 
 # define and load trained model
 model = BiSeNet(19, "resnet101")
@@ -29,6 +31,7 @@ with torch.no_grad():
 
     # calculate prediction for a batch
     img_batch, lbl_batch = next(iter(dataloader_train))
+    img_batch_denorm = denormalize_image(img_batch, dataset_train.mean, dataset_train.std)
     pred_batch = model(img_batch)
     pred_lbl_batch = torch.argmax(pred_batch, dim=1)
 
@@ -36,14 +39,14 @@ with torch.no_grad():
 
     # show results
     for idx in range(batch_size):
-        img = img_batch[idx]
-        img_denorm = denormalize_image(img, dataset_train.mean, dataset_train.std)
+        img = img_batch_denorm[idx]
         lbl = lbl_batch[idx]
         pred = pred_lbl_batch[idx]
 
-        axarr[idx, 0].imshow(format_image_print(img_denorm))
+        axarr[idx, 0].imshow(format_image_print(img))
         axarr[idx, 1].imshow(format_label_print(lbl, dataset_train.palette))
         axarr[idx, 2].imshow(format_label_print(pred, dataset_train.palette))
 
-        plt.legend(handles=patches, bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
+        plt.legend(handles=patches, bbox_to_anchor=(
+            1.05, 1), loc=2, borderaxespad=0.)
     plt.show()

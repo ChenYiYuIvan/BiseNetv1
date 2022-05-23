@@ -1,6 +1,6 @@
 import torch
 from ptflops import get_model_complexity_info
-from model.build_discriminator import *
+from model.build_discriminator import Discriminator, DepthwiseSeparableDiscriminator
 
 num_classes = 19
 
