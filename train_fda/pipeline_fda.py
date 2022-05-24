@@ -51,12 +51,12 @@ def make(config):
     # build optimizer
     if config.optimizer == 'rmsprop':
         optimizer = torch.optim.RMSprop(
-            model.parameters(), config.learning_rate)
+            model.parameters(), config.learning_rate_gen)
     elif config.optimizer == 'sgd':
         optimizer = torch.optim.SGD(
-            model.parameters(), config.learning_rate, momentum=0.9, weight_decay=1e-4)
+            model.parameters(), config.learning_rate_gen, momentum=0.9, weight_decay=1e-4)
     elif config.optimizer == 'adam':
-        optimizer = torch.optim.Adam(model.parameters(), config.learning_rate)
+        optimizer = torch.optim.Adam(model.parameters(), config.learning_rate_gen)
     else:  # rmsprop
         print('not supported optimizer \n')
         return None
@@ -106,7 +106,7 @@ def train(config, model, loss_func, optimizer, dataloader_src, dataloader_tgt, d
     step = 0
     for epoch in range(config.num_epochs):
         lr = poly_lr_scheduler(
-            optimizer, config.learning_rate, iter=epoch, max_iter=config.num_epochs)
+            optimizer, config.learning_rate_gen, iter=epoch, max_iter=config.num_epochs)
         model.train()
 
         tq = tqdm(total=len(dataloader_src) * config.batch_size)
@@ -156,7 +156,7 @@ def train(config, model, loss_func, optimizer, dataloader_src, dataloader_tgt, d
         if epoch % config.checkpoint_step == config.checkpoint_step - 1:
 
             model_path_name = os.path.join(
-                config.save_model_path, f'{config.model_name}.pth')
+                config.save_model_path, f'{config.model_name}_beta{config.beta}.pth')
             torch.save(model.module.state_dict(), model_path_name)
             artifact.add_file(
                 model_path_name, name=f'{config.model_name}_{epoch}_beta{config.beta}.pth')
@@ -167,7 +167,7 @@ def train(config, model, loss_func, optimizer, dataloader_src, dataloader_tgt, d
                 max_miou = miou
 
                 model_path_name = os.path.join(
-                    config.save_model_path, f'best_{config.model_name}.pth')
+                    config.save_model_path, f'best_{config.model_name}_beta{config.beta}.pth')
                 torch.save(model.module.state_dict(), model_path_name)
                 # artifact.add_file(
                 #     model_path_name, name=f'best_{config.model_name}_{epoch}.pth')
