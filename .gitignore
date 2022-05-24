@@ -2,10 +2,11 @@ __pycache__/
 runs/
 checkpoints_101_sgd/
 checkpoints_adversarial/
+checkpoints_fda/
 wandb/
 artifacts
 .idea
 **/desktop.ini
 .vscode
-step3/step3_*
+train_adversarial/step3_*
 test_vast.ipynb

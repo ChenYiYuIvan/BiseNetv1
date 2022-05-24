@@ -2,7 +2,7 @@ from dataset.Cityscapes import Cityscapes
 from torch.utils.data import DataLoader
 import torch
 from dataset.GTA5 import GTA5
-from step4.fda_utils import FDA_source_to_target
+from train_fda.fda_utils import FDA_source_to_target
 from utils import denormalize_image, format_image_print, format_label_print, get_legend_handles
 import matplotlib.pyplot as plt
 
