@@ -119,7 +119,7 @@ def train(config, model, loss_func, optimizer, dataloader_src, dataloader_tgt, d
             data_tgt = denormalize_image(data_tgt, data_mean, data_std)
 
             # apply FDA
-            data_src2tgt = FDA_source_to_target(data_src, data_tgt, beta=0.01)
+            data_src2tgt = FDA_source_to_target(data_src, data_tgt, beta=config.beta)
 
             # normalize image batches
             normalize = T.Normalize(data_mean, data_std)
@@ -159,7 +159,7 @@ def train(config, model, loss_func, optimizer, dataloader_src, dataloader_tgt, d
                 config.save_model_path, f'{config.model_name}.pth')
             torch.save(model.module.state_dict(), model_path_name)
             artifact.add_file(
-                model_path_name, name=f'{config.model_name}_{epoch}.pth')
+                model_path_name, name=f'{config.model_name}_{epoch}_beta{config.beta}.pth')
 
         if epoch % config.validation_step == config.validation_step - 1:
             precision, miou, miou_list = val(config, model, dataloader_val)
@@ -169,8 +169,8 @@ def train(config, model, loss_func, optimizer, dataloader_src, dataloader_tgt, d
                 model_path_name = os.path.join(
                     config.save_model_path, f'best_{config.model_name}.pth')
                 torch.save(model.module.state_dict(), model_path_name)
-                artifact.add_file(
-                    model_path_name, name=f'best_{config.model_name}_{epoch}.pth')
+                # artifact.add_file(
+                #     model_path_name, name=f'best_{config.model_name}_{epoch}.pth')
 
                 wandb_inst.summary['max_mIoU'] = max_miou
 

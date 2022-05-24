@@ -33,6 +33,7 @@ def main(params):
     parser.add_argument('--data_augmentation', dest='data_augmentation', default=False, action='store_true',
                         help='True to include data augmentation during training, False otherwise')
     parser.add_argument('--model_name', type=str, default=None, help='name of the model')
+    parser.add_argument('--beta', type=float, default=0.01, help='beta used for fda')
 
     args = parser.parse_args(params)
 
@@ -68,5 +69,6 @@ if __name__ == '__main__':
         '--validation_step', '5',
         '--data_augmentation',
         '--model_name', 'bisenet_trained_fda',
+        '--beta', '0.01',
     ]
     main(params)

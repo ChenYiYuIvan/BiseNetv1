@@ -12,8 +12,8 @@ import wandb
 #model_path = artifact.get_path('bisenet_adversarial_99.pth').download()
 
 # or use trained model from local files
-# model_path = 'checkpoints_adversarial/best_bisenet_adversarial_noaug.pth'
-model_path = 'artifacts/trained_bisenet_discr-v3/bisenet_adversarial_99.pth'
+model_path = 'checkpoints_fda/best_bisenet_trained_fda.pth'
+# model_path = 'artifacts/trained_bisenet_discr-v3/bisenet_adversarial_99.pth'
 
 # define validation dataset
 batch_size = 4
