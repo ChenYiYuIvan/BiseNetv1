@@ -124,16 +124,15 @@ def train_adversarial(config, model_gen, model_discr, loss_gen, loss_discr, opti
         for (data_src, label_src), (data_tgt, _) in zip(dataloader_source, dataloader_target):
             # denormalize image batches
             data_src = denormalize_image(data_src, data_mean, data_std)
-            data_tgt = denormalize_image(data_tgt, data_mean, data_std)
+            data_tgt_denorm = denormalize_image(data_tgt, data_mean, data_std)
 
             # apply FDA
             data_src2tgt = FDA_source_to_target(
-                data_src, data_tgt, beta=config.beta)
+                data_src, data_tgt_denorm, beta=config.beta)
 
             # normalize image batches
             normalize = T.Normalize(data_mean, data_std)
             data_src = normalize(data_src2tgt)
-            data_tgt = normalize(data_tgt)
 
             # move data to gpu
             data_src = data_src.cuda()
@@ -228,12 +227,13 @@ def train_adversarial(config, model_gen, model_discr, loss_gen, loss_discr, opti
         print('loss for generator train : %f' % loss_gen_epoch)
         print('loss for discriminator train : %f' % loss_discr_epoch)
 
+        beta_str = str(config.beta).replace('.', '_')
         if epoch % config.checkpoint_step == config.checkpoint_step - 1:
             model_path_name = os.path.join(
-                config.save_model_path, f'{config.model_name}_beta{config.beta}_adv.pth')
+                config.save_model_path, f'{config.model_name}_beta{beta_str}_adv.pth')
             torch.save(model_gen.module.state_dict(), model_path_name)
             artifact.add_file(
-                model_path_name, name=f'{config.model_name}_{epoch}_beta{config.beta}_adv.pth')
+                model_path_name, name=f'{config.model_name}_{epoch}_beta{beta_str}_adv.pth')
 
         if epoch % config.validation_step == config.validation_step - 1:
             precision, miou, miou_list = val(config, model_gen, dataloader_val)
@@ -241,10 +241,10 @@ def train_adversarial(config, model_gen, model_discr, loss_gen, loss_discr, opti
                 max_miou = miou
 
                 model_path_name = os.path.join(
-                    config.save_model_path, f'best_{config.model_name}_beta{config.beta}_adv.pth')
+                    config.save_model_path, f'best_{config.model_name}_beta{beta_str}_adv.pth')
                 torch.save(model_gen.module.state_dict(), model_path_name)
                 # artifact.add_file(
-                #     model_path_name, name=f'best_{config.model_name}_{epoch}_beta{config.beta}_adv.pth')
+                #     model_path_name, name=f'best_{config.model_name}_{epoch}_beta{beta_str}_adv.pth')
 
                 wandb_inst.summary['max_mIoU'] = max_miou
 

@@ -153,13 +153,15 @@ def train(config, model, loss_func, optimizer, dataloader_src, dataloader_tgt, d
         wandb_inst.log({"loss_epoch_train": loss_train_mean}, step=step)
 
         print('loss for train : %f' % loss_train_mean)
+
+        beta_str = str(config.beta).replace('.', '_')
         if epoch % config.checkpoint_step == config.checkpoint_step - 1:
 
             model_path_name = os.path.join(
-                config.save_model_path, f'{config.model_name}_beta{config.beta}.pth')
+                config.save_model_path, f'{config.model_name}_beta{beta_str}.pth')
             torch.save(model.module.state_dict(), model_path_name)
             artifact.add_file(
-                model_path_name, name=f'{config.model_name}_{epoch}_beta{config.beta}.pth')
+                model_path_name, name=f'{config.model_name}_{epoch}_beta{beta_str}.pth')
 
         if epoch % config.validation_step == config.validation_step - 1:
             precision, miou, miou_list = val(config, model, dataloader_val)
@@ -167,10 +169,10 @@ def train(config, model, loss_func, optimizer, dataloader_src, dataloader_tgt, d
                 max_miou = miou
 
                 model_path_name = os.path.join(
-                    config.save_model_path, f'best_{config.model_name}_beta{config.beta}.pth')
+                    config.save_model_path, f'best_{config.model_name}_beta{beta_str}.pth')
                 torch.save(model.module.state_dict(), model_path_name)
                 # artifact.add_file(
-                #     model_path_name, name=f'best_{config.model_name}_{epoch}.pth')
+                #     model_path_name, name=f'best_{config.model_name}_{epoch}_beta{beta_str}.pth')
 
                 wandb_inst.summary['max_mIoU'] = max_miou
 
