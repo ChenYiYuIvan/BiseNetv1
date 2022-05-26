@@ -138,7 +138,7 @@ def train(config, model, loss_func, optimizer, dataloader_src, dataloader_tgt, d
                 loss3 = loss_func(output_sup2, label)
                 loss = loss1 + loss2 + loss3
 
-                loss_high_ent = HighEntropyLoss(data_tgt)
+                loss_high_ent = HighEntropyLoss()(data_tgt)
 
                 loss = loss + config.lambda_ent * loss_high_ent
 

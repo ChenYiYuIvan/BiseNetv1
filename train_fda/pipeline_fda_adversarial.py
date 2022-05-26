@@ -159,7 +159,7 @@ def train_adversarial(config, model_gen, model_discr, loss_gen, loss_discr, opti
                 loss3 = loss_gen(output_sup2, label_src)
                 loss_seg_step = loss1 + loss2 + loss3
 
-                loss_high_ent = HighEntropyLoss(data_tgt)
+                loss_high_ent = HighEntropyLoss()(data_tgt)
 
                 loss_seg_step = loss_seg_step + config.lambda_ent * loss_high_ent
 
