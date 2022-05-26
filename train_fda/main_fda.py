@@ -24,7 +24,7 @@ def main(params):
     parser.add_argument('--learning_rate_discr', type=float, default=1e-4, help='learning rate for training discrim')
     parser.add_argument('--data_source', type=str, default='../GTA5', help='path of source data')
     parser.add_argument('--data_target', type=str, default='../Cityscapes', help='path of target data')
-    parser.add_argument('--lambda_seg', type=float, default=1, help='lambda for segmentation loss')
+    parser.add_argument('--lambda_ent', type=float, default=0.005, help='lambda for high entropy loss')
     parser.add_argument('--lambda_adv', type=float, default=0.001, help='lambda for adversarial loss')
     parser.add_argument('--num_workers', type=int, default=4, help='num of workers')
     parser.add_argument('--num_classes', type=int, default=19, help='num of object classes (with void)')
@@ -75,5 +75,6 @@ if __name__ == '__main__':
         # '--depthwise_separable',
         '--adversarial',
         '--beta', '0.01',
+        '--lambda_ent', '0.005',
     ]
     main(params)

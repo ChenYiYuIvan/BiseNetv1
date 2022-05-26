@@ -16,6 +16,7 @@ from train_fda.fda_utils import FDA_source_to_target
 from utils import denormalize_image, poly_lr_scheduler
 from val import val
 from torchvision import transforms as T
+from loss import HighEntropyLoss
 
 
 def make_adversarial(config):
@@ -73,7 +74,7 @@ def make_adversarial(config):
 
 
 def train_adversarial(config, model_gen, model_discr, loss_gen, loss_discr, optim_gen, optim_discr,
-          dataloader_source, dataloader_target, dataloader_val, wandb_inst):
+                      dataloader_source, dataloader_target, dataloader_val, wandb_inst):
     wandb_inst.watch(model_gen, loss_gen, log_freq=config.batch_size)
     artifact = wandb.Artifact(
         name='trained_bisenet_discr', type='model', metadata=dict(config))
@@ -119,7 +120,7 @@ def train_adversarial(config, model_gen, model_discr, loss_gen, loss_discr, opti
 
         loss_seg_record = []
         loss_adv_record = []
-        loss_gen_record = []  # loss_gen = lambda_seg * loss_seg_step + lambda_adv * loss_adv_step
+        loss_gen_record = []  # loss_gen = loss_seg_step + lambda_adv * loss_adv_step
         loss_discr_record = []
         for (data_src, label_src), (data_tgt, _) in zip(dataloader_source, dataloader_target):
             # denormalize image batches
@@ -132,10 +133,10 @@ def train_adversarial(config, model_gen, model_discr, loss_gen, loss_discr, opti
 
             # normalize image batches
             normalize = T.Normalize(data_mean, data_std)
-            data_src = normalize(data_src2tgt)
+            data_src2tgt = normalize(data_src2tgt)
 
             # move data to gpu
-            data_src = data_src.cuda()
+            data_src2tgt = data_src2tgt.cuda()
             label_src = label_src.long().cuda()
             data_tgt = data_tgt.cuda()
 
@@ -152,12 +153,15 @@ def train_adversarial(config, model_gen, model_discr, loss_gen, loss_discr, opti
 
             with amp.autocast():
                 # train with source
-                out_seg_src, output_sup1, output_sup2 = model_gen(data_src)
+                out_seg_src, output_sup1, output_sup2 = model_gen(data_src2tgt)
                 loss1 = loss_gen(out_seg_src, label_src)
                 loss2 = loss_gen(output_sup1, label_src)
                 loss3 = loss_gen(output_sup2, label_src)
                 loss_seg_step = loss1 + loss2 + loss3
-                loss_seg_step = config.lambda_seg * loss_seg_step
+
+                loss_high_ent = HighEntropyLoss(data_tgt)
+
+                loss_seg_step = loss_seg_step + config.lambda_ent * loss_high_ent
 
                 # train with target
                 out_seg_tgt, _, _ = model_gen(data_tgt)

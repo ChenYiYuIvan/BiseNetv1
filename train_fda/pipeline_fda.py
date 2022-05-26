@@ -9,7 +9,7 @@ from tqdm import tqdm
 import numpy as np
 from train_fda.fda_utils import FDA_source_to_target
 from utils import denormalize_image, poly_lr_scheduler
-from loss import DiceLoss
+from loss import DiceLoss, HighEntropyLoss
 import torch.cuda.amp as amp
 from dataset.Cityscapes import Cityscapes
 from val import val
@@ -56,7 +56,8 @@ def make(config):
         optimizer = torch.optim.SGD(
             model.parameters(), config.learning_rate_gen, momentum=0.9, weight_decay=1e-4)
     elif config.optimizer == 'adam':
-        optimizer = torch.optim.Adam(model.parameters(), config.learning_rate_gen)
+        optimizer = torch.optim.Adam(
+            model.parameters(), config.learning_rate_gen)
     else:  # rmsprop
         print('not supported optimizer \n')
         return None
@@ -119,22 +120,27 @@ def train(config, model, loss_func, optimizer, dataloader_src, dataloader_tgt, d
             data_tgt = denormalize_image(data_tgt, data_mean, data_std)
 
             # apply FDA
-            data_src2tgt = FDA_source_to_target(data_src, data_tgt, beta=config.beta)
+            data_src2tgt = FDA_source_to_target(
+                data_src, data_tgt, beta=config.beta)
 
             # normalize image batches
             normalize = T.Normalize(data_mean, data_std)
-            data = normalize(data_src2tgt)
+            data_src2tgt = normalize(data_src2tgt)
 
-            data = data.cuda()
+            data_src2tgt = data_src2tgt.cuda()
             label = label.long().cuda()
             optimizer.zero_grad()
 
             with amp.autocast():
-                output, output_sup1, output_sup2 = model(data)
+                output, output_sup1, output_sup2 = model(data_src2tgt)
                 loss1 = loss_func(output, label)
                 loss2 = loss_func(output_sup1, label)
                 loss3 = loss_func(output_sup2, label)
                 loss = loss1 + loss2 + loss3
+
+                loss_high_ent = HighEntropyLoss(data_tgt)
+
+                loss = loss + config.lambda_ent * loss_high_ent
 
             scaler.scale(loss).backward()
             scaler.step(optimizer)

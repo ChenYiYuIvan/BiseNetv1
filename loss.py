@@ -35,3 +35,25 @@ class DiceLoss(nn.Module):
         dice = torch.mean(dice)
         return 1 - dice
         # return 1 - 2. * intersect / denominator
+
+class HighEntropyLoss(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.eps = 1e-4
+        self.eta = 2
+
+    def forward(self, output):
+
+        # copied from code of paper
+        pred = F.softmax(output, dim=1)
+        log_pred = F.log_softmax(output, dim=1)
+        loss = pred * log_pred
+        loss = -(loss.sum(dim=1)) # / 2.9444
+        loss = self.charbonnier(loss)
+
+        return loss.mean()
+
+    def charbonnier(self, x):
+        x = x**2 + self.eps**2
+        x = x**self.eta
+        return x
