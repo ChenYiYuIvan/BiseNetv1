@@ -41,6 +41,15 @@ Loss used:
 ($\lambda_{adv} = 0.001$, while $L_{adv}(I_{t})$ and $L_{d}(P)$ are taken from this [paper](https://arxiv.org/abs/1802.10349))
 
 ---
+
+## Model complexity
+
+Code to calculate the complexity of the discriminator model in terms of MACs:
+```
+!python testing_scripts/calculate_complexity.py
+```
+
+---
 ## FDA: Fourier domain adaptation
 
 Code to apply Fast Fourier Transform on GTA5 dataset to improve the performance of unsupervised domain adaptation methods
@@ -88,7 +97,7 @@ Loss used:
 ($L_{ce}(I_{t-pseudo})$ is taken from this [paper](https://arxiv.org/abs/2004.05498))
 
 ---
-## Acknowledgment
+## Acknowledgements
 
 Part of the code is adapted from the following projects:
 - [Starting code](https://github.com/taveraantonio/BiseNetv1)
