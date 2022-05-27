@@ -82,7 +82,7 @@ def make(config):
 
 def train(config, model, loss_func, optimizer, dataloader_src, dataloader_tgt, dataloader_val, wandb_inst):
     wandb_inst.watch(model, loss_func, log_freq=config.batch_size)
-    artifact = wandb.Artifact(name='trained_bisenet_fda',
+    artifact = wandb.Artifact(name='trained_bisenet_fda_sst',
                               type='model', metadata=dict(config))
 
     # creating table to store metrics for wandb
@@ -114,7 +114,7 @@ def train(config, model, loss_func, optimizer, dataloader_src, dataloader_tgt, d
         tq.set_description('epoch %d, lr %f' % (epoch, lr))
 
         loss_record = []
-        for (data_src, label_src), (data_tgt, pseudo_tgt) in zip(dataloader_src, dataloader_tgt):
+        for (data_src, label_src), (data_tgt, pseudo_tgt, _, _) in zip(dataloader_src, dataloader_tgt):
             # denormalize image batches
             data_src = denormalize_image(data_src, data_mean, data_std)
             data_tgt = denormalize_image(data_tgt, data_mean, data_std)
@@ -140,7 +140,7 @@ def train(config, model, loss_func, optimizer, dataloader_src, dataloader_tgt, d
                 loss_src2tgt = loss1 + loss2 + loss3
 
                 # loss to penalize high entropy predictions
-                loss_high_ent = HighEntropyLoss(data_tgt)
+                loss_high_ent = HighEntropyLoss()(data_tgt)
 
                 # cross entropy loss on target images with pseudolabels
                 output, output_sup1, output_sup2 = model(data_tgt)

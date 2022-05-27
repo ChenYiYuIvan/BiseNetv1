@@ -1,5 +1,6 @@
 import argparse
 import json
+import os
 import torch
 from torch import nn
 import wandb
@@ -8,7 +9,6 @@ from torch.utils.data import DataLoader
 from model.build_BiSeNet import BiSeNet
 import numpy as np
 from utils import reverse_one_hot, compute_global_accuracy, fast_hist, per_class_iu
-from val import val
 
 
 def val_mbt(config, model1, model2, model3, dataloader):
@@ -78,9 +78,9 @@ def main(params):
     parser.add_argument('--num_workers', type=int, default=4, help='num of workers')
     parser.add_argument('--batch_size', type=int, default=1, help='Number of images in each batch')
     parser.add_argument('--loss', type=str, default='crossentropy', help='loss function, dice or crossentropy')
-    parser.add_argument('--model1_beta', type=str, default=None, help='name of the model 1')
-    parser.add_argument('--model2_beta', type=str, default=None, help='name of the model 2')
-    parser.add_argument('--model3_beta', type=str, default=None, help='name of the model 3')
+    parser.add_argument('--artifact1_path', type=str, default=None, help='path of artifact 1')
+    parser.add_argument('--artifact2_path', type=str, default=None, help='path of artifact 2')
+    parser.add_argument('--artifact3_path', type=str, default=None, help='path of artifact 3')
     args = parser.parse_args(params)
     
     # define models
@@ -114,9 +114,9 @@ def main(params):
                                     num_workers=args.num_workers,
                                     pin_memory=True)
 
-        artifact1 = run.use_artifact('mldlproj1gr2/step2/trained_bisenet_discr:v7', type='model')
-        artifact2 = run.use_artifact('mldlproj1gr2/step2/trained_bisenet_discr:v8', type='model')
-        artifact3 = run.use_artifact('mldlproj1gr2/step2/trained_bisenet_discr:v9', type='model')
+        artifact1 = run.use_artifact(config.artifact1_path, type='model')
+        artifact2 = run.use_artifact(config.artifact2_path, type='model')
+        artifact3 = run.use_artifact(config.artifact3_path, type='model')
 
         step = 0
         max_miou = 0
@@ -125,13 +125,13 @@ def main(params):
             if epoch % config.validation_step == config.validation_step - 1:
 
                 # load trained models
-                model_path1 = artifact1.get_path(f'bisenet_trained_fda_{epoch}_beta{config.model1_beta}_adv.pth').download()
+                model_path1 = artifact1.get_path(f'bisenet_trained_fda_{epoch}_beta0_01_adv.pth').download()
                 model1.load_state_dict(torch.load(model_path1))
 
-                model_path2 = artifact2.get_path(f'bisenet_trained_fda_{epoch}_beta{config.model1_beta}_adv.pth').download()
+                model_path2 = artifact2.get_path(f'bisenet_trained_fda_{epoch}_beta0_05_adv.pth').download()
                 model2.load_state_dict(torch.load(model_path2))
 
-                model_path3 = artifact3.get_path(f'bisenet_trained_fda_{epoch}_beta{config.model1_beta}_adv.pth').download()
+                model_path3 = artifact3.get_path(f'bisenet_trained_fda_{epoch}_beta0_09_adv.pth').download()
                 model3.load_state_dict(torch.load(model_path3))
 
                 # evaluate with mbt
@@ -144,6 +144,11 @@ def main(params):
                 metrics_rows.append([epoch, precision, miou, *miou_list])
                 run.log({"accuracy": precision, "mIoU": miou}, step=step)
                 run.log(dict(zip(labels, miou_list)), step=step)
+
+                # remove models from local directory to save space
+                os.remove(model_path1)
+                os.remove(model_path2)
+                os.remove(model_path3)
                 
         metrics_table = wandb.Table(columns=columns, data=metrics_rows)
         run.log({'metrics_table': metrics_table})
@@ -151,8 +156,8 @@ def main(params):
 
 if __name__ == '__main__':
     params = [
-        '--model1_beta', '0_01',
-        '--model2_beta', '0_05',
-        '--model3_beta', '0_09',
+        '--artifact1_path', 'mldlproj1gr2/step2/trained_bisenet_fda_sst:v0',
+        '--artifact2_path', 'mldlproj1gr2/step2/trained_bisenet_fda_sst:v1',
+        '--artifact3_path', 'mldlproj1gr2/step2/trained_bisenet_fda_sst:v2',
     ]
     main(params)

@@ -69,7 +69,7 @@ if __name__ == '__main__':
         '--num_epochs', '100',
         '--checkpoint_step', '5',
         '--validation_step', '5',
-        '--save_model_path', './checkpoints_fda',
+        '--save_model_path', './checkpoints_fda_sst',
         '--model_name', 'bisenet_trained_fda',
         '--data_augmentation',
         # '--depthwise_separable',

@@ -31,7 +31,7 @@ def make_adversarial(config):
                                    pin_memory=True)
 
     dataset_target = CityscapesPseudo(config.data_target, 'train', [config.crop_height, config.crop_width],
-                                config.data_augmentation)
+                                      config.data_augmentation)
     dataloader_target = DataLoader(dataset_target,
                                    batch_size=config.batch_size,
                                    shuffle=True,
@@ -75,10 +75,10 @@ def make_adversarial(config):
 
 
 def train_adversarial(config, model_gen, model_discr, loss_gen, loss_discr, optim_gen, optim_discr,
-          dataloader_source, dataloader_target, dataloader_val, wandb_inst):
+                      dataloader_source, dataloader_target, dataloader_val, wandb_inst):
     wandb_inst.watch(model_gen, loss_gen, log_freq=config.batch_size)
     artifact = wandb.Artifact(
-        name='trained_bisenet_fda', type='model', metadata=dict(config))
+        name='trained_bisenet_fda_sst', type='model', metadata=dict(config))
 
     # creating table to store metrics for wandb
     metrics_rows = []
@@ -123,7 +123,7 @@ def train_adversarial(config, model_gen, model_discr, loss_gen, loss_discr, opti
         loss_adv_record = []
         loss_gen_record = []  # loss_gen = lambda_seg * loss_seg_step + lambda_adv * loss_adv_step
         loss_discr_record = []
-        for (data_src2tgt, label_src), (data_tgt, pseudo_tgt) in zip(dataloader_source, dataloader_target):
+        for (data_src2tgt, label_src), (data_tgt, pseudo_tgt, _, _) in zip(dataloader_source, dataloader_target):
             # denormalize image batches
             data_src2tgt = denormalize_image(data_src2tgt, data_mean, data_std)
             data_tgt_denorm = denormalize_image(data_tgt, data_mean, data_std)
@@ -140,6 +140,7 @@ def train_adversarial(config, model_gen, model_discr, loss_gen, loss_discr, opti
             data_src2tgt = data_src2tgt.cuda()
             label_src = label_src.long().cuda()
             data_tgt = data_tgt.cuda()
+            pseudo_tgt = pseudo_tgt.long().cuda()
 
             optim_gen.zero_grad()
             optim_discr.zero_grad()
@@ -163,8 +164,8 @@ def train_adversarial(config, model_gen, model_discr, loss_gen, loss_discr, opti
                 loss_src2tgt = loss1 + loss2 + loss3
 
                 # loss to penalize high entropy predictions
-                loss_high_ent = HighEntropyLoss(data_tgt)
-                
+                loss_high_ent = HighEntropyLoss()(data_tgt)
+
                 # cross entropy loss on target images with pseudolabels
                 out_seg_src, output_sup1, output_sup2 = model_gen(data_tgt)
                 loss_pseudo1 = loss_gen(out_seg_src, pseudo_tgt)
@@ -173,7 +174,7 @@ def train_adversarial(config, model_gen, model_discr, loss_gen, loss_discr, opti
                 loss_pseudo = loss_pseudo1 + loss_pseudo2 + loss_pseudo3
 
                 # total segmentation loss on source
-                loss_seg_step = loss_src2tgt + config.lambda_env * loss_high_ent + loss_pseudo
+                loss_seg_step = loss_src2tgt + config.lambda_ent * loss_high_ent + loss_pseudo
 
                 # train with target
                 out_seg_tgt, _, _ = model_gen(data_tgt)

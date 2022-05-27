@@ -1,6 +1,6 @@
 import argparse
 from pipeline_fda import make, train
-from train_fda.pipeline_fda_adversarial import make_adversarial, train_adversarial
+from pipeline_fda_adversarial import make_adversarial, train_adversarial
 from val import val
 import wandb
 

@@ -118,9 +118,9 @@ def main(params):
 if __name__ == '__main__':
     params = [
         '--save_model_path', './checkpoints_fda',
-        '--model1_name', 'best_bisenet_trained_fda_beta0.01_adv.pth',
-        '--model2_name', 'best_bisenet_trained_fda_beta0.05_adv.pth',
-        '--model3_name', 'best_bisenet_trained_fda_beta0.09_adv.pth',
+        '--model1_name', 'best_bisenet_trained_fda_beta0_01_adv.pth',
+        '--model2_name', 'best_bisenet_trained_fda_beta0_05_adv.pth',
+        '--model3_name', 'best_bisenet_trained_fda_beta0_09_adv.pth',
     ]
     main(params)
     

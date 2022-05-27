@@ -77,7 +77,7 @@ def train_adversarial(config, model_gen, model_discr, loss_gen, loss_discr, opti
                       dataloader_source, dataloader_target, dataloader_val, wandb_inst):
     wandb_inst.watch(model_gen, loss_gen, log_freq=config.batch_size)
     artifact = wandb.Artifact(
-        name='trained_bisenet_discr', type='model', metadata=dict(config))
+        name='trained_bisenet_fda', type='model', metadata=dict(config))
 
     # creating table to store metrics for wandb
     metrics_rows = []
