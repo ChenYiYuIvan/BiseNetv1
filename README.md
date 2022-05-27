@@ -50,9 +50,6 @@ Code to produce pseudolabels for Cityscapes dataset with a network trained using
 ## Acknowledgment
 
 Part of the code is adapted from the following projects:
-
-<ul>
-    <li> [Starting code](https://github.com/taveraantonio/BiseNetv1) </li>
-    <li> [Unsupervised domain adaptation](https://github.com/wasidennis/AdaptSegNet) </li>
-    <li> [FDA and self-supervised learning](https://github.com/YanchaoYang/FDA) </li>
-<ul>
+- [Starting code](https://github.com/taveraantonio/BiseNetv1)
+- [Unsupervised domain adaptation](https://github.com/wasidennis/AdaptSegNet)
+- [FDA and self-supervised learning](https://github.com/YanchaoYang/FDA)
