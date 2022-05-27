@@ -1,7 +1,8 @@
 import argparse
-import os
+import json
 import torch
 from torch import nn
+import wandb
 from dataset.Cityscapes import Cityscapes
 from torch.utils.data import DataLoader
 from model.build_BiSeNet import BiSeNet
@@ -71,56 +72,87 @@ def main(params):
 
     # basic parameters
     parser = argparse.ArgumentParser()
+    parser.add_argument('--num_epochs', type=int, default=100, help='Number of epochs to train for')
+    parser.add_argument('--validation_step', type=int, default=10, help='How often to perform validation (epochs)')
     parser.add_argument('--num_classes', type=int, default=19, help='num of object classes (with void)')
     parser.add_argument('--num_workers', type=int, default=4, help='num of workers')
     parser.add_argument('--batch_size', type=int, default=1, help='Number of images in each batch')
     parser.add_argument('--loss', type=str, default='crossentropy', help='loss function, dice or crossentropy')
-    parser.add_argument('--save_model_path', type=str, default=None, help='path where models are saved')
-    parser.add_argument('--model1_name', type=str, default=None, help='name of the model 1')
-    parser.add_argument('--model2_name', type=str, default=None, help='name of the model 2')
-    parser.add_argument('--model3_name', type=str, default=None, help='name of the model 3')
+    parser.add_argument('--model1_beta', type=str, default=None, help='name of the model 1')
+    parser.add_argument('--model2_beta', type=str, default=None, help='name of the model 2')
+    parser.add_argument('--model3_beta', type=str, default=None, help='name of the model 3')
     args = parser.parse_args(params)
     
-    # load 3 models
+    # define models
     model1 = BiSeNet(args.num_classes, "resnet101")
-    model1_path = os.path.join(args.save_model_path, args.model1_name)
-    model1.load_state_dict(torch.load(model1_path))
-
     model2 = BiSeNet(args.num_classes, "resnet101")
-    model2_path = os.path.join(args.save_model_path, args.model2_name)
-    model2.load_state_dict(torch.load(model2_path))
-
     model3 = BiSeNet(args.num_classes, "resnet101")
-    model3_path = os.path.join(args.save_model_path, args.model3_name)
-    model3.load_state_dict(torch.load(model3_path))
-
+    
     if torch.cuda.is_available():
         model1 = torch.nn.DataParallel(model1).cuda()
         model2 = torch.nn.DataParallel(model2).cuda()
         model3 = torch.nn.DataParallel(model3).cuda()
 
-    # define test dataset
-    dataset_val = Cityscapes('../Cityscapes', 'val', [512, 1024], False)
-    dataloader_val = DataLoader(dataset_val,
-                                batch_size=args.batch_size,
-                                shuffle=False,
-                                num_workers=args.num_workers,
-                                pin_memory=True)
+    # creating table to store metrics for wandb
+    metrics_rows = []
+    with open('./dataset/info.json', 'r') as f:
+        data = json.load(f)
+        labels = data['label'][:-1]
+        labels = [f'IoU_{label}' for label in labels]
+        columns = ['epoch', 'accuracy', 'mIoU']
+        columns.extend(labels)
 
-    # evaluate models separately
-    # val(args, model1, dataloader_val)
-    # val(args, model2, dataloader_val)
-    # val(args, model3, dataloader_val)
+    wandb.login()
+    with wandb.init(project="bisenet", entity="mldlproj1gr2", config=vars(args)) as run:
+        config = wandb.config
 
-    # evaluate models using multi-band transfer
-    val_mbt(args, model1, model2, model3, dataloader_val)
+        # define test dataset
+        dataset_val = Cityscapes('../Cityscapes', 'val', [512, 1024], False)
+        dataloader_val = DataLoader(dataset_val,
+                                    batch_size=args.batch_size,
+                                    shuffle=False,
+                                    num_workers=args.num_workers,
+                                    pin_memory=True)
+
+        artifact1 = run.use_artifact('mldlproj1gr2/step2/trained_bisenet_discr:v7', type='model')
+        artifact2 = run.use_artifact('mldlproj1gr2/step2/trained_bisenet_discr:v8', type='model')
+        artifact3 = run.use_artifact('mldlproj1gr2/step2/trained_bisenet_discr:v9', type='model')
+
+        step = 0
+        max_miou = 0
+        for epoch in range(config.num_epochs):
+            step += 125 # num_images / batch_size = 500 / 4
+            if epoch % config.validation_step == config.validation_step - 1:
+
+                # load trained models
+                model_path1 = artifact1.get_path(f'bisenet_trained_fda_{epoch}_beta{config.model1_beta}_adv.pth').download()
+                model1.load_state_dict(torch.load(model_path1))
+
+                model_path2 = artifact2.get_path(f'bisenet_trained_fda_{epoch}_beta{config.model1_beta}_adv.pth').download()
+                model2.load_state_dict(torch.load(model_path2))
+
+                model_path3 = artifact3.get_path(f'bisenet_trained_fda_{epoch}_beta{config.model1_beta}_adv.pth').download()
+                model3.load_state_dict(torch.load(model_path3))
+
+                # evaluate with mbt
+                precision, miou, miou_list = val_mbt(config, model1, model2, model3, dataloader_val)
+
+                if miou > max_miou:
+                    max_miou = miou
+                    run.summary['max_mIoU'] = max_miou
+
+                metrics_rows.append([epoch, precision, miou, *miou_list])
+                run.log({"accuracy": precision, "mIoU": miou}, step=step)
+                run.log(dict(zip(labels, miou_list)), step=step)
+                
+        metrics_table = wandb.Table(columns=columns, data=metrics_rows)
+        run.log({'metrics_table': metrics_table})
 
 
 if __name__ == '__main__':
     params = [
-        '--save_model_path', './checkpoints_fda',
-        '--model1_name', 'best_bisenet_trained_fda_beta0.01_adv.pth',
-        '--model2_name', 'best_bisenet_trained_fda_beta0.05_adv.pth',
-        '--model3_name', 'best_bisenet_trained_fda_beta0.09_adv.pth',
+        '--model1_beta', '0_01',
+        '--model2_beta', '0_05',
+        '--model3_beta', '0_09',
     ]
     main(params)

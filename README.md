@@ -38,13 +38,22 @@ Code to apply Fast Fourier Transform on GTA5 dataset to improve the performance 
 !python train_fda/main_fda.py
 ```
 
+## MBT: Multi-band transfer
+
+Code to evaluate performance of averaging predictions of 3 different models trained with FDA with different betas:
+
+```
+!python train_mbt_sst/val_mbt.py
+```
+
 ## Self-supervised learning
 
-Code to produce pseudolabels for Cityscapes dataset with a network trained using FDA, which are then used to perform self-supervised learning with multi-band transfer:
+Code to produce pseudolabels for Cityscapes dataset using MBT, which are then used to perform self-supervised learning on models using FDA using 3 different beta, which are in turn used to perform a second round of MBT:
 
 ```
 !python train_mbt_sst/generate_pseudolabels.py
 !python train_mbt_sst/main_fda_sst.py
+!python train_mbt_sst/val_mbt.py
 ```
 
 ## Acknowledgment
