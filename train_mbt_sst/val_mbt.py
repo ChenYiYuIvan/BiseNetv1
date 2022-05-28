@@ -28,7 +28,7 @@ def val_mbt(config, model1, model2, model3, dataloader):
             data = data.cuda()
             label = label.long().cuda()
 
-            ## get RGB predict image
+            # get RGB predict image
             predict1 = model1(data)
             predict1 = softmax(predict1)
 
@@ -73,11 +73,15 @@ def main(params):
     # basic parameters
     parser = argparse.ArgumentParser()
     parser.add_argument('--num_epochs', type=int, default=100, help='Number of epochs to train for')
-    parser.add_argument('--validation_step', type=int, default=10, help='How often to perform validation (epochs)')
+    parser.add_argument('--validation_step', type=int, default=5, help='How often to perform validation (epochs)')
     parser.add_argument('--num_classes', type=int, default=19, help='num of object classes (with void)')
     parser.add_argument('--num_workers', type=int, default=4, help='num of workers')
     parser.add_argument('--batch_size', type=int, default=1, help='Number of images in each batch')
     parser.add_argument('--loss', type=str, default='crossentropy', help='loss function, dice or crossentropy')
+    parser.add_argument('--data_augmentation', dest='data_augmentation', default=False, action='store_true',
+                        help='Include to use data augmentation during training')
+    parser.add_argument('--adversarial', dest='adversarial', default=False, action='store_true',
+                        help='True to apply adversarial learning during training, False otherwise')
     parser.add_argument('--artifact1_path', type=str, default=None, help='path of artifact 1')
     parser.add_argument('--artifact2_path', type=str, default=None, help='path of artifact 2')
     parser.add_argument('--artifact3_path', type=str, default=None, help='path of artifact 3')
@@ -87,11 +91,11 @@ def main(params):
     model1 = BiSeNet(args.num_classes, "resnet101")
     model2 = BiSeNet(args.num_classes, "resnet101")
     model3 = BiSeNet(args.num_classes, "resnet101")
-    
-    if torch.cuda.is_available():
-        model1 = torch.nn.DataParallel(model1).cuda()
-        model2 = torch.nn.DataParallel(model2).cuda()
-        model3 = torch.nn.DataParallel(model3).cuda()
+
+    # load models to gpu
+    model1 = model1.cuda()
+    model2 = model2.cuda()
+    model3 = model3.cuda()
 
     # creating table to store metrics for wandb
     metrics_rows = []
@@ -121,8 +125,9 @@ def main(params):
         step = 0
         max_miou = 0
         for epoch in range(config.num_epochs):
-            step += 125 # num_images / batch_size = 500 / 4
+            step += 125
             if epoch % config.validation_step == config.validation_step - 1:
+                print(f'Epoch: {epoch}')
 
                 # load trained models
                 model_path1 = artifact1.get_path(f'bisenet_trained_fda_{epoch}_beta0_01_adv.pth').download()
@@ -142,7 +147,7 @@ def main(params):
                     run.summary['max_mIoU'] = max_miou
 
                 metrics_rows.append([epoch, precision, miou, *miou_list])
-                run.log({"accuracy": precision, "mIoU": miou}, step=step)
+                run.log({"epoch": epoch, "accuracy": precision, "mIoU": miou}, step=step)
                 run.log(dict(zip(labels, miou_list)), step=step)
 
                 # remove models from local directory to save space
@@ -156,8 +161,10 @@ def main(params):
 
 if __name__ == '__main__':
     params = [
-        '--artifact1_path', 'mldlproj1gr2/step2/trained_bisenet_fda_sst:v0',
-        '--artifact2_path', 'mldlproj1gr2/step2/trained_bisenet_fda_sst:v1',
-        '--artifact3_path', 'mldlproj1gr2/step2/trained_bisenet_fda_sst:v2',
+        '--data_augmentation',
+        '--adversarial',
+        '--artifact1_path', 'mldlproj1gr2/bisenet/trained_bisenet_fda_sst:v0',
+        '--artifact2_path', 'mldlproj1gr2/bisenet/trained_bisenet_fda_sst:v1',
+        '--artifact3_path', 'mldlproj1gr2/bisenet/trained_bisenet_fda_sst:v2',
     ]
     main(params)
