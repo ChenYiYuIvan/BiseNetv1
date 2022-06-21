@@ -32,19 +32,19 @@ class DepthwiseSeparableDiscriminator(nn.Module):
         super().__init__()
 
         self.depth1 = nn.Conv2d(in_ch, in_ch, kernel_size=kernel_size, stride=stride, padding=padding, groups=in_ch)
-        self.point1 = nn.Conv2d(in_ch, 64, kernel_size=kernel_size, stride=1)
+        self.point1 = nn.Conv2d(in_ch, 64, kernel_size=1, stride=1)
 
         self.depth2 = nn.Conv2d(64, 64, kernel_size=kernel_size, stride=stride, padding=padding, groups=64)
-        self.point2 = nn.Conv2d(64, 128, kernel_size=kernel_size, stride=1)
+        self.point2 = nn.Conv2d(64, 128, kernel_size=1, stride=1)
 
         self.depth3 = nn.Conv2d(128, 128, kernel_size=kernel_size, stride=stride, padding=padding, groups=128)
-        self.point3 = nn.Conv2d(128, 256, kernel_size=kernel_size, stride=1)
+        self.point3 = nn.Conv2d(128, 256, kernel_size=1, stride=1)
 
         self.depth4 = nn.Conv2d(256, 256, kernel_size=kernel_size, stride=stride, padding=padding, groups=256)
-        self.point4 = nn.Conv2d(256, 512, kernel_size=kernel_size, stride=1)
+        self.point4 = nn.Conv2d(256, 512, kernel_size=1, stride=1)
 
         self.depth5 = nn.Conv2d(512, 512, kernel_size=kernel_size, stride=stride, padding=padding, groups=512)
-        self.point5 = nn.Conv2d(512, out_ch, kernel_size=kernel_size, stride=1)
+        self.point5 = nn.Conv2d(512, out_ch, kernel_size=1, stride=1)
 
         self.leaky_relu = nn.LeakyReLU(negative_slope=0.2)
 
